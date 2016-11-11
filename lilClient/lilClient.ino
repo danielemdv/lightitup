@@ -1,8 +1,8 @@
 /*
-The aim of this lil script is to geta  lil server running on the arduino Yun and
+The aim of this lil script is to geta  lil client running on the arduino Yun and
 getting an external agent to control its light turning on or off.
 
-We'll also see if I manage to get the lil server to report its status to the big server
+We'll also see if I manage to get the lil client to report its status to the big server
 
 Note: I'll have to see whaddup with the server instructions getting here as with the commands
 I will copy from the examples only instructions coming from the localhost(linino core) will
@@ -30,17 +30,16 @@ BridgeServer server;
 
 
 int lightSensorPin = A0; //analog pin to get light level readings.
-int ledPin = 12; //Led to simulate lamp
-int sensorValue = 0; // variable to store light reading
-String ledState; //prolly gonna throw it to hell
+int ledPin = 13; //Led to simulate lamp
+int lightSensorValue = 0; // variable to store light reading
 
+int motionLed = 12; //LED to see motion values.
 int pirSensorPin = 7;
 int pirSensorValue = 0;
 
 void setup() {
-  // put your setup code here, to run once:
-  String ledState = "";
-  pinMode(ledPin, OUTPUT);
+  pinMode(ledPin, OUTPUT); //Initialize ledPin
+  pinMode(pirSensorPin, INPUT); //Initialize pir sensor pin
   
   // Bridge startup
   pinMode(13, OUTPUT);
@@ -60,9 +59,13 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
   
  checkLightLevel(); //Check light, turn LED state accordingly, print value
+ checkMovement(); //update the value of the motion sensor's output.
+ 
+ localUpdateLight(); //Update the street light's state according to local variables.
+ 
+ sendUpdate(); //Creates a JSON string that sends all the current info of this client to the server.
  
  serveClient(); // Serve client depending on his request.
  
@@ -104,28 +107,66 @@ void process(BridgeClient client) {
 void statusCommand(BridgeClient client) {
   
   //Get light reading
-  sensorValue = analogRead(lightSensorPin);
+  lightSensorValue = analogRead(lightSensorPin);
+  //Get motion reading
+  pirSensorValue = digitalRead(pirSensorPin);
   
   // Send feedback to client
   client.print("lightStatus=");
-  client.println(sensorValue);
+  client.println(lightSensorValue);
+  
+  client.print("motionStatus=");
+  client.println(pirSensorValue);
 }
 
 
 void checkLightLevel(){
-   sensorValue = analogRead(lightSensorPin);
-  
-  //Check if LED should be on
-  if(sensorValue < 400)
+   lightSensorValue = analogRead(lightSensorPin);
+}
+
+void checkMovement(){
+  pirSensorValue = digitalRead(pirSensorPin);
+}
+
+//Functtion to update light depending on
+void localUpdateLight(){
+    //Check if LED should be on
+  if(lightSensorValue < 400)
   {
     digitalWrite(ledPin, HIGH);
-    ledState = "LED On!";
   }
   else
   {
     digitalWrite(ledPin, LOW);
-    ledState = "LED OFF!";
   }
   
-  Serial.println(sensorValue);
+  Serial.println(lightSensorValue);
+  
+  
+  //Only showing movement light for now
+  if(pirSensorValue)
+  {
+     digitalWrite(motionLed, HIGH);
+  }
+  else
+  {
+     digitalWrite(motionLed, LOW);
+  }
+  
+  Serial.println(pirSensorValue);
+}
+
+void sendUpdate(){
+  String updateString =  buildString(lightSensorValue, pirSensorValue);
+  Serial.println(updateString);
+}
+
+String buildString(int light, int motion){
+  String one = "{\"light\":";
+  String two = ",\"motion\":";
+  String three = "}";
+  
+  String res = one + light + two + motion + three;
+  
+  return res;
 }
