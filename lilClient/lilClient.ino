@@ -67,11 +67,68 @@ void loop() {
  
  sendUpdate(); //Creates a JSON string that sends all the current info of this client to the server.
  
- serveClient(); // Serve client depending on his request.
+ serveClient(); // LOCAL SERVER serve the incoming client.
  
  delay(200);
   
 }
+
+
+
+
+void checkLightLevel(){
+   lightSensorValue = analogRead(lightSensorPin);
+}
+
+void checkMovement(){
+  pirSensorValue = digitalRead(pirSensorPin);
+}
+
+//Functtion to update light depending on
+void localUpdateLight(){
+    //Check if LED should be on
+  if(lightSensorValue < 400)
+  {
+    digitalWrite(ledPin, HIGH);
+  }
+  else
+  {
+    digitalWrite(ledPin, LOW);
+  }
+  
+  Serial.println(lightSensorValue);
+  
+  
+  //Only showing movement light for now
+  if(pirSensorValue)
+  {
+     digitalWrite(motionLed, HIGH);
+  }
+  else
+  {
+     digitalWrite(motionLed, LOW);
+  }
+  
+  Serial.println(pirSensorValue);
+}
+
+void sendUpdate(){
+  String updateString =  buildJsonString(lightSensorValue, pirSensorValue);
+  Serial.println(updateString);
+}
+
+String buildJsonString(int light, int motion){
+  String one = "{\"light\":";
+  String two = ",\"motion\":";
+  String three = "}";
+  
+  String res = one + light + two + motion + three;
+  
+  return res;
+}
+
+
+//-----------LOCAL SERVER CODE (TO EVENTUALLY DEPRECATE)----------
 
 void serveClient(){
   
@@ -119,54 +176,4 @@ void statusCommand(BridgeClient client) {
   client.println(pirSensorValue);
 }
 
-
-void checkLightLevel(){
-   lightSensorValue = analogRead(lightSensorPin);
-}
-
-void checkMovement(){
-  pirSensorValue = digitalRead(pirSensorPin);
-}
-
-//Functtion to update light depending on
-void localUpdateLight(){
-    //Check if LED should be on
-  if(lightSensorValue < 400)
-  {
-    digitalWrite(ledPin, HIGH);
-  }
-  else
-  {
-    digitalWrite(ledPin, LOW);
-  }
-  
-  Serial.println(lightSensorValue);
-  
-  
-  //Only showing movement light for now
-  if(pirSensorValue)
-  {
-     digitalWrite(motionLed, HIGH);
-  }
-  else
-  {
-     digitalWrite(motionLed, LOW);
-  }
-  
-  Serial.println(pirSensorValue);
-}
-
-void sendUpdate(){
-  String updateString =  buildString(lightSensorValue, pirSensorValue);
-  Serial.println(updateString);
-}
-
-String buildString(int light, int motion){
-  String one = "{\"light\":";
-  String two = ",\"motion\":";
-  String three = "}";
-  
-  String res = one + light + two + motion + three;
-  
-  return res;
-}
+//----------------- END LOCAL SERVER CODE---------------------------
