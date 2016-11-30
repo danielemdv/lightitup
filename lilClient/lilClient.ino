@@ -30,7 +30,7 @@ BridgeServer server;
 
 
 int lightSensorPin = A0; //analog pin to get light level readings.
-int ledPin = 13; //Led to simulate lamp
+int ledPin = 9; //Led to simulate lamp
 int lightSensorValue = 0; // variable to store light reading
 
 int motionLed = 12; //LED to see motion values.
@@ -96,6 +96,8 @@ void loop() {
 
 
 
+
+
 void checkLightLevel(){
    lightSensorValue = analogRead(lightSensorPin);
 }
@@ -137,9 +139,9 @@ void localUpdateLight(){
 
 void sendUpdate(){
   String updateString =  buildJsonString(lightSensorValue, pirSensorValue);
-  runCurlConnection(updateString, serverIPAndPort);
+  int updateValue = runCurlConnection(updateString, serverIPAndPort);
   //Serial.println(updateString);
-  
+  dim(updateValue);
   
   
 }
@@ -155,7 +157,7 @@ String buildJsonString(int light, int motion){
 }
 
 //Function to send json data to the specified server.
-void runCurlConnection(String json, String serverIP){
+int runCurlConnection(String json, String serverIP){
   Serial.println("Entrando CurlConnection");
   Process p;
   
@@ -163,23 +165,37 @@ void runCurlConnection(String json, String serverIP){
   //p.runShellCommand("curl -H \"Content-Type: application/json\" -X POST -d '{\"light\":534, \"motion\":1}' 192.168.1.3:8081/clientupdate"); //Testing just with begin.
     
     
-  p.runShellCommand("curl -H \"Content-Type: application/json\" -X POST -d '" + json + "' " + serverIp + "/clientupdate");
+  p.runShellCommand("curl -H \"Content-Type: application/json\" -X POST -d '" + json + "' " + serverIP + "/clientupdate");
     
   
+  String inString = "";
   
   // A process output can be read with the stream methods
   while (p.available() > 0) {
     char c = p.read();
     Serial.print(c);
+    if (isDigit(c)) {
+      // convert the incoming byte to a char
+      // and add it to the string:
+      inString += (char)c;
+    }
   }
   // Ensure the last bit of data is sent.
   Serial.flush();
   
+  return inString.toInt();
 }
 
 
-//-------------------------------------------SERVER COMMUNICATION CODE------------------------
+//-------------------------------------------END SERVER COMMUNICATION CODE------------------------
 
+
+void dim(int value){
+  double fadeValue = (double) value;
+  fadeValue = fadeValue/100 * 255;
+  //Serial.println(fadeValue);
+  analogWrite(ledPin, fadeValue); 
+}
 
 //-----------LOCAL SERVER CODE (TO EVENTUALLY DEPRECATE)----------
 
