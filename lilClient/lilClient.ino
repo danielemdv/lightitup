@@ -34,8 +34,13 @@ int ledPin = 13; //Led to simulate lamp
 int lightSensorValue = 0; // variable to store light reading
 
 int motionLed = 12; //LED to see motion values.
-int pirSensorPin = 7;
-int pirSensorValue = 0;
+int pirSensorPin = 7; //Pin for the digital input of the PIR sensor
+int pirSensorValue = 0; //Variable to store motion reading.
+
+int serverTimeout = 0; //Counter to track disconnected time from server.
+
+
+String serverIPAndPort = "192.168.1.3:8081";
 
 void setup() {
   pinMode(ledPin, OUTPUT); //Initialize ledPin
@@ -60,10 +65,25 @@ void setup() {
 
 void loop() {
   
+  /*
+  Cosas que necesitamos hacer:
+    Checar sensores
+    Mandar info al servidor
+      Actualizar timeout de servidor (si llevamos mucho tiempo sin saber nada del servidor hacemos updates locales)
+    Ver si tenemos que ejecutar localUpdate
+    Delay
+  
+  
+  */
+  
  checkLightLevel(); //Check light, turn LED state accordingly, print value
  checkMovement(); //update the value of the motion sensor's output.
  
- localUpdateLight(); //Update the street light's state according to local variables.
+ if(serverTimeout > 20000) //20 segundos
+ {
+    localUpdateLight(); //Update the street light's state according to local variables.
+ }
+
  
  sendUpdate(); //Creates a JSON string that sends all the current info of this client to the server.
  
@@ -112,9 +132,16 @@ void localUpdateLight(){
   Serial.println(pirSensorValue);
 }
 
+
+//-------------------------------------------SERVER COMMUNICATION CODE------------------------
+
 void sendUpdate(){
   String updateString =  buildJsonString(lightSensorValue, pirSensorValue);
-  Serial.println(updateString);
+  runCurlConnection(updateString, serverIPAndPort);
+  //Serial.println(updateString);
+  
+  
+  
 }
 
 String buildJsonString(int light, int motion){
@@ -126,6 +153,32 @@ String buildJsonString(int light, int motion){
   
   return res;
 }
+
+//Function to send json data to the specified server.
+void runCurlConnection(String json, String serverIP){
+  Serial.println("Entrando CurlConnection");
+  Process p;
+  
+  //Run the full shell command.
+  //p.runShellCommand("curl -H \"Content-Type: application/json\" -X POST -d '{\"light\":534, \"motion\":1}' 192.168.1.3:8081/clientupdate"); //Testing just with begin.
+    
+    
+  p.runShellCommand("curl -H \"Content-Type: application/json\" -X POST -d '" + json + "' " + serverIp + "/clientupdate");
+    
+  
+  
+  // A process output can be read with the stream methods
+  while (p.available() > 0) {
+    char c = p.read();
+    Serial.print(c);
+  }
+  // Ensure the last bit of data is sent.
+  Serial.flush();
+  
+}
+
+
+//-------------------------------------------SERVER COMMUNICATION CODE------------------------
 
 
 //-----------LOCAL SERVER CODE (TO EVENTUALLY DEPRECATE)----------

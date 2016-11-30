@@ -1,6 +1,6 @@
 
 int sensorPin = A0;
-int ledPin = 13;
+int ledPin = 12;
 int sensorValue = 0;
 String ledState;
 
@@ -17,7 +17,7 @@ void loop() {
   sensorValue = analogRead(sensorPin);
   
   //Check if LED should be on
-  if(sensorValue < 800)
+  if(sensorValue < 700)
   {
     digitalWrite(ledPin, HIGH);
     ledState = "LED On!";
@@ -30,6 +30,6 @@ void loop() {
   
   Serial.println(sensorValue);
   
-  delay(1);
+  delay(200);
   
 }
