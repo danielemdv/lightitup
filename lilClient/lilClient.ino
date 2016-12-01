@@ -40,7 +40,7 @@ int pirSensorValue = 0; //Variable to store motion reading.
 int serverTimeout = 0; //Counter to track disconnected time from server.
 
 
-String serverIPAndPort = "192.168.1.3:8081";
+String serverIPAndPort = "10.6.78.66:8081";
 
 void setup() {
   pinMode(ledPin, OUTPUT); //Initialize ledPin
@@ -89,7 +89,7 @@ void loop() {
  
  serveClient(); // LOCAL SERVER serve the incoming client.
  
- delay(200);
+ delay(1500);//   1.5 secs
   
 }
 
@@ -139,8 +139,8 @@ void localUpdateLight(){
 
 void sendUpdate(){
   String updateString =  buildJsonString(lightSensorValue, pirSensorValue);
-  int updateValue = runCurlConnection(updateString, serverIPAndPort);
-  //Serial.println(updateString);
+  double updateValue = runCurlConnection(updateString, serverIPAndPort);
+  Serial.println(updateValue);
   dim(updateValue);
   
   
@@ -157,7 +157,7 @@ String buildJsonString(int light, int motion){
 }
 
 //Function to send json data to the specified server.
-int runCurlConnection(String json, String serverIP){
+double runCurlConnection(String json, String serverIP){
   Serial.println("Entrando CurlConnection");
   Process p;
   
@@ -167,34 +167,40 @@ int runCurlConnection(String json, String serverIP){
     
   p.runShellCommand("curl -H \"Content-Type: application/json\" -X POST -d '" + json + "' " + serverIP + "/clientupdate");
     
+  while (p.running()); // Let the process finish running.
   
   String inString = "";
   
   // A process output can be read with the stream methods
   while (p.available() > 0) {
     char c = p.read();
-    Serial.print(c);
-    if (isDigit(c)) {
-      // convert the incoming byte to a char
-      // and add it to the string:
-      inString += (char)c;
-    }
+    Serial.print("incoming char: " + c);
+//    if (isDigit(c)) {
+//      // convert the incoming byte to a char
+//      // and add it to the string:
+//      inString += (char)c;
+//    }
+    
+    inString += (char)c;
+//    if (c == '\n') {
+//      inString = "";
+//    }
   }
   // Ensure the last bit of data is sent.
   Serial.flush();
   
-  return inString.toInt();
+  return (double)inString.toInt();
 }
 
 
 //-------------------------------------------END SERVER COMMUNICATION CODE------------------------
 
 
-void dim(int value){
-  double fadeValue = (double) value;
+void dim(double value){
+  double fadeValue = value;
   fadeValue = fadeValue/100 * 255;
-  //Serial.println(fadeValue);
   analogWrite(ledPin, fadeValue); 
+  Serial.println("Setting pwm to: " + (String)fadeValue);
 }
 
 //-----------LOCAL SERVER CODE (TO EVENTUALLY DEPRECATE)----------
